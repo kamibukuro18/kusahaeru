@@ -29,9 +29,9 @@ const XContributionGraph: React.FC = () => {
       })
       console.log('API response:', response.data)
       if ('error' in response.data) {
-        setError(response.data.error)
+        setError((response.data as ErrorResponse).error)
       } else {
-        setContributions(response.data)
+        setContributions(response.data as Contributions)
       }
     } catch (error) {
       console.error('Error fetching data:', error)
