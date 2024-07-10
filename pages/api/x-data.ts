@@ -1,20 +1,29 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import axios from 'axios'
 
+interface Tweet {
+  id: string;
+  text: string;
+}
+
 interface UserData {
   id: string;
   name: string;
   username: string;
 }
 
+interface TweetsResponse {
+  data: Tweet[];
+}
+
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<UserData | { error: string }>
+  res: NextApiResponse<TweetsResponse | { error: string }>
 ) {
-  const { account } = req.query
+  const { username } = req.query
 
-  if (!account || typeof account !== 'string') {
-    return res.status(400).json({ error: 'Account is required' })
+  if (!username || typeof username !== 'string') {
+    return res.status(400).json({ error: 'Username is required' })
   }
 
   const bearerToken = process.env.X_BEARER_TOKEN
@@ -24,25 +33,27 @@ export default async function handler(
   }
 
   try {
-    const apiUrl = `https://api.twitter.com/2/users/me`
-    const response = await axios.get(apiUrl, {
+    // ユーザーIDの取得
+    const userUrl = `https://api.twitter.com/2/users/by/username/${username}`
+    const userResponse = await axios.get<{ data: UserData }>(userUrl, {
       headers: {
         'Authorization': `Bearer ${bearerToken}`,
       }
     })
 
-    console.log('X API response:', response.data)
+    const userId = userResponse.data.data.id
 
-    if (response.data.errors) {
-      return res.status(400).json({ error: response.data.errors[0].message })
-    }
+    // ツイートリストの取得
+    const tweetsUrl = `https://api.twitter.com/2/users/${userId}/tweets`
+    const tweetsResponse = await axios.get<TweetsResponse>(tweetsUrl, {
+      headers: {
+        'Authorization': `Bearer ${bearerToken}`,
+      }
+    })
 
-    const userData = response.data.data
-    if (!userData) {
-      return res.status(404).json({ error: 'User not found' })
-    }
+    console.log('X API response:', tweetsResponse.data)
 
-    res.status(200).json(userData)
+    res.status(200).json(tweetsResponse.data)
   } catch (error) {
     console.error('Error fetching X data:', error)
     if (axios.isAxiosError(error) && error.response) {
