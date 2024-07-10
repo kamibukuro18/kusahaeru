@@ -24,7 +24,7 @@ export default async function handler(
   }
 
   try {
-    const apiUrl = `https://api.twitter.com/2/users/by/username/${account}`
+    const apiUrl = `https://api.twitter.com/2/users/me`
     const response = await axios.get(apiUrl, {
       headers: {
         'Authorization': `Bearer ${bearerToken}`,
