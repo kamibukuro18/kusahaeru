@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react'
+import React, { useState, useCallback } from 'react'
 import axios from 'axios'
 
 interface Contributions {
@@ -9,23 +9,29 @@ const XContributionGraph: React.FC = () => {
   const [account, setAccount] = useState<string>('')
   const [contributions, setContributions] = useState<Contributions>({})
   const [loading, setLoading] = useState<boolean>(false)
-
-  const getColor = useCallback((count: number): string => {
-    if (count === 0) return 'bg-gray-100'
-    if (count < 5) return 'bg-green-200'
-    if (count < 10) return 'bg-green-300'
-    if (count < 15) return 'bg-green-400'
-    return 'bg-green-500'
-  }, [])
+  const [error, setError] = useState<string | null>(null)
 
   const fetchData = useCallback(async (inputAccount: string) => {
+    if (!inputAccount.trim()) {
+      setError('Please enter a valid account name')
+      return
+    }
+    
     setLoading(true)
+    setError(null)
     try {
-      const response = await axios.get<Contributions>(`/api/x-data?account=${inputAccount}`)
-      setContributions(response.data)
+      const response = await axios.get<Contributions | { error: string }>(`/api/x-data`, {
+        params: { account: inputAccount }
+      })
+      console.log('API response:', response.data)
+      if ('error' in response.data) {
+        setError(response.data.error)
+      } else {
+        setContributions(response.data)
+      }
     } catch (error) {
       console.error('Error fetching data:', error)
-      // エラーハンドリングを追加（例：ユーザーへの通知）
+      setError('Failed to fetch data. Please try again.')
     }
     setLoading(false)
   }, [])
@@ -33,27 +39,11 @@ const XContributionGraph: React.FC = () => {
   const handleSubmit = useCallback((e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (account.trim()) {
-      fetchData(account)
+      fetchData(account.trim())
+    } else {
+      setError('Please enter a valid account name')
     }
   }, [account, fetchData])
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setAccount(e.target.value)
-  }
-
-  useEffect(() => {
-    fetchData('')  // 初期データ読み込み
-  }, [fetchData])
-
-  const renderDays = useCallback(() => {
-    return Object.entries(contributions).map(([day, count]) => (
-      <div
-        key={day}
-        className={`w-3 h-3 ${getColor(count)} rounded-sm`}
-        title={`Posts: ${count}`}
-      />
-    ))
-  }, [contributions, getColor])
 
   return (
     <div className="bg-white rounded-lg shadow-sm p-6">
@@ -61,8 +51,8 @@ const XContributionGraph: React.FC = () => {
         <input
           type="text"
           value={account}
-          onChange={handleInputChange}
-          placeholder="Enter X account"
+          onChange={(e) => setAccount(e.target.value)}
+          placeholder="Enter X username (without @)"
           className="flex-grow px-3 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
         />
         <button 
@@ -72,22 +62,11 @@ const XContributionGraph: React.FC = () => {
           Fetch Data
         </button>
       </form>
-      {loading ? (
-        <div className="text-center text-gray-600">Loading...</div>
-      ) : (
+      {loading && <div className="text-center text-gray-600">Loading...</div>}
+      {error && <div className="text-center text-red-500">{error}</div>}
+      {!loading && !error && Object.keys(contributions).length > 0 && (
         <div className="flex flex-col">
-          <div className="flex justify-end space-x-2 text-xs text-gray-600 mb-1">
-            <span>Less</span>
-            <div className="flex space-x-1">
-              {['bg-gray-100', 'bg-green-200', 'bg-green-300', 'bg-green-400', 'bg-green-500'].map((color) => (
-                <div key={color} className={`w-3 h-3 ${color} rounded-sm`} />
-              ))}
-            </div>
-            <span>More</span>
-          </div>
-          <div className="grid grid-rows-7 grid-flow-col gap-1">
-            {renderDays()}
-          </div>
+          {/* レンダリングロジックをここに追加 */}
         </div>
       )}
     </div>
