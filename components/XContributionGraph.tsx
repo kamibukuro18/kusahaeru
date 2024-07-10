@@ -5,6 +5,10 @@ interface Contributions {
   [key: string]: number
 }
 
+interface ErrorResponse {
+  error: string
+}
+
 const XContributionGraph: React.FC = () => {
   const [account, setAccount] = useState<string>('')
   const [contributions, setContributions] = useState<Contributions>({})
@@ -20,7 +24,7 @@ const XContributionGraph: React.FC = () => {
     setLoading(true)
     setError(null)
     try {
-      const response = await axios.get<Contributions | { error: string }>(`/api/x-data`, {
+      const response = await axios.get<Contributions | ErrorResponse>(`/api/x-data`, {
         params: { account: inputAccount }
       })
       console.log('API response:', response.data)
