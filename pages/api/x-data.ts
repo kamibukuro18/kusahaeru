@@ -34,17 +34,17 @@ export default async function handler(
 
   try {
     // ユーザーIDの取得
-    const userUrl = `https://api.twitter.com/2/users/by/username/${username}`
-    const userResponse = await axios.get<{ data: UserData }>(userUrl, {
-      headers: {
-        'Authorization': `Bearer ${bearerToken}`,
-      }
-    })
+    //const userUrl = `https://api.twitter.com/2/users/by/username/${username}`
+    //const userResponse = await axios.get<{ data: UserData }>(userUrl, {
+    //  headers: {
+    //    'Authorization': `Bearer ${bearerToken}`,
+    //  }
+    //})
 
-    const userId = userResponse.data.data.id
+    //const userId = userResponse.data.data.id
 
     // ツイートリストの取得
-    const tweetsUrl = `https://api.twitter.com/2/users/${userId}/tweets`
+    const tweetsUrl = `https://api.twitter.com/2/users/${username}/tweets`
     const tweetsResponse = await axios.get<TweetsResponse>(tweetsUrl, {
       headers: {
         'Authorization': `Bearer ${bearerToken}`,
