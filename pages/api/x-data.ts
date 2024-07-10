@@ -1,20 +1,20 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import axios from 'axios'
 
-interface Contributions {
-  [key: string]: number
+interface UserData {
+  id: string;
+  name: string;
+  username: string;
 }
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<Contributions | { error: string }>
+  res: NextApiResponse<UserData | { error: string }>
 ) {
-  console.log('API route called with query:', req.query)
-
   const { account } = req.query
 
-  if (!account || typeof account !== 'string' || account.trim() === '') {
-    return res.status(400).json({ error: 'Valid account name is required' })
+  if (!account || typeof account !== 'string') {
+    return res.status(400).json({ error: 'Account is required' })
   }
 
   const bearerToken = process.env.X_BEARER_TOKEN
@@ -28,34 +28,21 @@ export default async function handler(
     const response = await axios.get(apiUrl, {
       headers: {
         'Authorization': `Bearer ${bearerToken}`,
-      },
-      params: {
-        'user.fields': 'public_metrics,created_at'
       }
     })
 
     console.log('X API response:', response.data)
+
+    if (response.data.errors) {
+      return res.status(400).json({ error: response.data.errors[0].message })
+    }
 
     const userData = response.data.data
     if (!userData) {
       return res.status(404).json({ error: 'User not found' })
     }
 
-    // この部分は実際のデータに基づいて調整する必要があります
-    const contributions: Contributions = {}
-    const today = new Date()
-    const createdAt = new Date(userData.created_at)
-    const daysSinceCreation = Math.floor((today.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24))
-
-    for (let i = 0; i < Math.min(357, daysSinceCreation); i++) {
-      const date = new Date(today)
-      date.setDate(date.getDate() - i)
-      const dateString = date.toISOString().split('T')[0]
-      // この行を実際のデータ取得ロジックに置き換える必要があります
-      contributions[dateString] = Math.floor(userData.public_metrics.tweet_count / daysSinceCreation)
-    }
-
-    res.status(200).json(contributions)
+    res.status(200).json(userData)
   } catch (error) {
     console.error('Error fetching X data:', error)
     if (axios.isAxiosError(error) && error.response) {
